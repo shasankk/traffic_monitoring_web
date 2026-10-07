@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Monitoring System</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        /* Form Styles */
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="file"] {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Error Message */
+        .error {
+            color: #ff0000;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Vehicle Counts */
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            color: #444;
+        }
+
+        /* Graph Container */
+        .graph-container {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .graph-container h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .graph-container img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Violations Section */
+        .violations {
+            margin-top: 1.5rem;
+        }
+
+        .violations h2 {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .violations p {
+            color: #ff0000;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            p {
+                font-size: 0.9rem;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        /* Loader CSS */
+        .loader {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none; /* Hidden by default */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Center the loader */
+        .loader-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Hide results initially */
+        .results {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Traffic Monitoring System</h1>
+        <p>Upload a traffic video to classify, count vehicles (cars, buses, trucks, SUVs), and detect traffic violations.</p>
+        
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            <input type="file" name="video" accept="video/*" required>
+            <button type="submit">Analyze Video</button>
+        </form>
+
+        <!-- Loader -->
+        <div class="loader-container">
+            <div class="loader"></div>
+            <p>Analyzing video... Please wait.</p>
+        </div>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        {% if counts %}
+        <div class="results">
+            <h2>Vehicle Counts</h2>
+            <ul>
+                <li>Cars: {{ counts.cars }}</li>
+                <li>Buses: {{ counts.buses }}</li>
+                <li>Trucks: {{ counts.trucks }}</li>
+                <li>SUVs: {{ counts.suvs }}</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if graph_filename %}
+            <div class="graph-container">
+                <h2>Vehicle Count Over Time</h2>
+                <img src="{{ url_for('static_files', filename=graph_filename) }}" alt="Vehicle Count Graph">
+            </div>
+        {% endif %}
+
+        {% if violation_graph_filename %}
+            <div class="graph-container">
+                <h2>Violations Over Time</h2>
+                <img src="{{ url_for('static_files', filename=violation_graph_filename) }}" alt="Violation Graph">
+            </div>
+            <div class="violations">
+                <h2>Traffic Violations</h2>
+                <p>Total Violations Detected: {{ total_violations }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Show loader and hide results when the form is submitted
+        document.getElementById("uploadForm").addEventListener("submit", function () {
+            // Show loader
+            document.querySelector(".loader").style.display = "block";
+            document.querySelector(".loader-container p").style.display = "block";
+
+            // Hide results
+            document.querySelector(".results").style.display = "none";
+        });
+
+        // Show results and hide loader when the page loads (after analysis is complete)
+        window.addEventListener("load", function () {
+            // Hide loader
+            document.querySelector(".loader").style.display = "none";
+            document.querySelector(".loader-container p").style.display = "none";
+
+            // Show results if counts exist
+            {% if counts %}
+                document.querySelector(".results").style.display = "block";
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

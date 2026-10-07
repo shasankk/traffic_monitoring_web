@@ -1,0 +1,36 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / Packaging
+.dist/
+build/
+dist/
+*.egg-info/
+
+# Virtual Environments
+myenv/
+venv/
+env/
+ENV/
+
+# Model Weights (Large files - must be downloaded separately)
+*.weights
+yolov3.weights
+
+# Video uploads and generated output assets
+static/*.mp4
+static/*.avi
+static/*.mov
+static/*.mkv
+static/*.png
+static/*.jpg
+static/*.jpeg
+!static/.gitkeep
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
