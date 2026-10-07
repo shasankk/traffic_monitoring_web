@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Traffic Analysis Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0f172a;
+            color: var(--text-main);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        h1 { font-size: 2rem; font-weight: 800; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .weather-widget {
+            background: var(--glass-bg); padding: 1rem 1.5rem; border-radius: 12px;
+            border: 1px solid var(--glass-border); font-size: 1.1rem;
+        }
+
+        .dashboard-grid {
+            display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;
+        }
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--glass-bg); backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.5rem;
+        }
+
+        .video-container img { width: 100%; border-radius: 8px; display: block; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+        .stat-card {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+            padding: 1rem; border-radius: 12px; text-align: center;
+        }
+        .stat-value { font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem; }
+        .stat-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;}
+        
+        .dominating-class { grid-column: span 2; background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), transparent); border-color: #3b82f6;}
+        .dominating-class .stat-value { color: #60a5fa; font-size: 1.5rem; }
+
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        
+        .btn-back { display: inline-block; margin-top: 1rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+        .btn-back:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Live Traffic & ANPR Dashboard</h1>
+        <div class="weather-widget">
+            🌍 <strong>{{ city }}</strong>: {{ weather }}
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="panel">
+            <h2 style="margin-bottom:1rem;">Live Camera Feed</h2>
+            <div class="video-container">
+                <img src="{{ url_for('video_feed') }}" alt="Live Feed">
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2 style="margin-bottom:1rem;">Traffic Analytics</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card dominating-class">
+                    <div class="stat-value" id="dominant-class">Calculating...</div>
+                    <div class="stat-label">Highest Traffic Consumer</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-car">0</div>
+                    <div class="stat-label">Cars</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-bus">0</div>
+                    <div class="stat-label">Buses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-motorcycle">0</div>
+                    <div class="stat-label">Motorcycles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-truck">0</div>
+                    <div class="stat-label">Trucks</div>
+                </div>
+                <div class="stat-card" style="grid-column: span 2; background: rgba(16, 185, 129, 0.1); border-color: #10b981;">
+                    <div class="stat-value" id="stat-plates" style="color: #34d399;">0</div>
+                    <div class="stat-label">License Plates Detected (ANPR)</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="trafficChart"></canvas>
+            </div>
+            
+            <a href="/" class="btn-back">← Analyze Another Video</a>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('trafficChart').getContext('2d');
+        const trafficChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Cars', 'Buses', 'Motorcycles', 'Trucks'],
+                datasets: [{
+                    label: 'Vehicle Count',
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8', stepSize: 1 } },
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        setInterval(() => {
+            fetch('/stats')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('stat-car').innerText = data.car;
+                    document.getElementById('stat-bus').innerText = data.bus;
+                    document.getElementById('stat-motorcycle').innerText = data.motorcycle;
+                    document.getElementById('stat-truck').innerText = data.truck;
+                    document.getElementById('stat-plates').innerText = data.plates;
+
+                    // Calculate dominant
+                    const counts = { 'Cars': data.car, 'Buses': data.bus, 'Motorcycles': data.motorcycle, 'Trucks': data.truck };
+                    const dominant = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                    if(counts[dominant] > 0) {
+                        document.getElementById('dominant-class').innerText = dominant;
+                    }
+
+                    // Update Chart
+                    trafficChart.data.datasets[0].data = [data.car, data.bus, data.motorcycle, data.truck];
+                    trafficChart.update();
+                })
+                .catch(err => console.error("Error fetching stats:", err));
+        }, 1000);
+    </script>
+</body>
+</html>

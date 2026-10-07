@@ -1,26 +1,26 @@
-# 🚦 AI-Powered Traffic Monitoring & Violation Detection System
+# 🚦 AI-Powered Traffic Monitoring & ANPR Dashboard
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.10+-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
-[![YOLOv3](https://img.shields.io/badge/YOLO-v3%20Darknet-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://pjreddie.com/darknet/yolo/)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://github.com/ultralytics/ultralytics)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-An intelligent, end-to-end computer vision and web-based traffic surveillance system. It performs real-time vehicle classification, multi-object tracking, traffic violation detection (red light running and wrong-way driving), automated flow analytics, and adaptive smart traffic signal simulation.
+An intelligent, state-of-the-art computer vision and web-based traffic surveillance system. It performs real-time vehicle classification, multi-object tracking, Automatic Number Plate Recognition (ANPR), and live traffic density profiling with a beautiful, modern dashboard.
 
 ---
 
 ## 📌 Key Features
 
-- **🚗 Multi-Class Vehicle Detection:** Detects and classifies cars, buses, trucks, and SUVs using the **YOLOv3 (Darknet)** deep neural network via OpenCV's DNN module.
-- **🎯 Unique Object Tracking (Centroid Tracker):** Employs Euclidean distance matrices and frame disappearance buffers to track objects across video frames and prevent duplicate counts.
-- **🚨 Automated Violation Detection:**
-  - **Red Light Violations:** Identifies stationary vehicles encroaching on designated intersection/junction zones.
-  - **Wrong-Way Driving:** Tracks vehicle trajectory vectors against expected lane flow directions.
-- **🚥 Smart Traffic Signal Control:** Simulates dynamic traffic signal state switching (Green $\leftrightarrow$ Red) driven by real-time violation frequency thresholds.
-- **📊 Automated Analytics & Graph Generation:** Generates time-series line charts for cumulative vehicle counts and violation trends over time using **Matplotlib**.
-- **🌐 Interactive Web Dashboard:** Built with **Flask** and **Jinja2**, featuring asynchronous video upload processing, animated loading indicators, and visual result summaries.
-- **🌤️ Integrated Weather Utility:** Includes a quick weather tracker querying real-time atmospheric data.
+- **🚗 Advanced Vehicle Detection:** Detects and classifies cars, buses, trucks, and motorcycles using the **YOLOv8s** deep neural network for high accuracy and speed.
+- **🎯 Real-Time Object Tracking:** Uses YOLOv8's native tracking capabilities to uniquely identify and track vehicles across video frames, preventing duplicate counts.
+- **🔍 Automatic Number Plate Recognition (ANPR):** Scans the interior of detected vehicles using OpenCV Haar Cascades (`haarcascade_russian_plate_number.xml`) to locate and track license plates.
+- **📊 Live Analytics Dashboard:** 
+  - Dynamic **Chart.js** bar graphs update in real-time as the video streams.
+  - Automatically calculates and displays the **Highest Traffic Consumer** (dominating vehicle class).
+- **📹 Instant MJPEG Video Streaming:** No more waiting for videos to process! Upload a video and instantly watch the AI process and annotate frames live in your browser.
+- **🌤️ Integrated Climate Conditions:** Enter your city on upload to fetch and display real-time weather data (`wttr.in`) directly on your dashboard.
+- **✨ Premium UI/UX:** Built with a modern dark-mode Glassmorphism aesthetic, smooth micro-animations, and a responsive two-page layout (`index.html` -> `dashboard.html`).
 
 ---
 
@@ -28,17 +28,14 @@ An intelligent, end-to-end computer vision and web-based traffic surveillance sy
 
 ```mermaid
 flowchart TD
-    A[📹 Video Upload / Input Stream] --> B[Frame Extraction & Preprocessing]
-    B --> C[YOLOv3 Deep Neural Network Inference]
-    C --> D[Non-Maximum Suppression (NMS)]
-    D --> E[Centroid Tracker & ID Assignment]
-    E --> F{Rule-Based Violation Engine}
-    F -->|Direction Check| G[Wrong-Way Detection]
-    F -->|Zone Check| H[Red-Light Violation]
-    E --> I[Unique Vehicle Counter]
-    G & H --> J[Adaptive Signal Controller]
-    I & G & H --> K[Matplotlib Analytics Engine]
-    K --> L[📊 Web Dashboard & Annotated Video Output]
+    A[📹 Video Upload & City Input] --> B[Live Streaming Engine / MJPEG]
+    B --> C[YOLOv8s Object Detection & Tracking]
+    C --> D[Vehicle Classification & Counting]
+    C --> E[Extract Bounding Box ROI]
+    E --> F[Haar Cascade ANPR]
+    D & F --> G[Update Global Analytics State]
+    G --> H[AJAX Polling Endpoint /stats]
+    H --> I[Live Dashboard: Chart.js & Metrics]
 ```
 
 ---
@@ -47,15 +44,14 @@ flowchart TD
 
 ```plaintext
 traffic_monitoring_web/
-├── app.py                 # Core Flask application and video analytics pipeline
-├── wt.py                  # Standalone weather tracking module
-├── coco.names             # COCO dataset class labels
-├── yolov3.cfg             # YOLOv3 network configuration file
+├── app.py                 # Core Flask app, YOLOv8 pipeline, and MJPEG streaming
 ├── requirements.txt       # Project dependencies
 ├── .gitignore             # Git ignore configuration
+├── haarcascade_russian_plate_number.xml # Haar cascade for ANPR
+├── yolov8s.pt             # YOLOv8 small model (auto-downloads if missing)
 ├── templates/
-│   ├── index.html         # Main dashboard template for upload & analytics
-│   └── weather.html       # Weather tracker template
+│   ├── index.html         # Landing page (Upload & Weather input)
+│   └── dashboard.html     # Live analysis dashboard (Video stream & Charts)
 └── static/                # Static assets, uploads, and output graphs
     └── .gitkeep
 ```
@@ -86,21 +82,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Download YOLOv3 Weights
-The YOLOv3 pre-trained weights file (`yolov3.weights`, ~237 MB) is required for deep learning inference. Download it and place it in the root project directory:
-
-- **Direct Download Link:** [pjreddie.com/media/files/yolov3.weights](https://pjreddie.com/media/files/yolov3.weights)
-
-Or download via terminal:
-```bash
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://pjreddie.com/media/files/yolov3.weights" -OutFile "yolov3.weights"
-
-# Linux / macOS (curl / wget)
-curl -O https://pjreddie.com/media/files/yolov3.weights
-# or
-wget https://pjreddie.com/media/files/yolov3.weights
-```
+*(Note: YOLOv8 model weights `yolov8s.pt` will automatically download on your first run!)*
 
 ---
 
@@ -110,35 +92,24 @@ wget https://pjreddie.com/media/files/yolov3.weights
    ```bash
    python app.py
    ```
-2. **Access the Web Dashboard:**
-   Open your browser and navigate to `http://localhost:5000` (or `http://127.0.0.1:5000`).
+2. **Access the Web Interface:**
+   Open your browser and navigate to `http://localhost:5000`.
 
-3. **Analyze Video:**
+3. **Analyze Traffic Live:**
+   - Enter your city name for live weather tracking.
    - Upload any traffic surveillance video (`.mp4`, `.avi`, `.mov`).
-   - Click **Analyze Video**.
-   - Review live frame tracking, vehicle totals, violation counts, and generated flow graphs.
-
----
-
-## 🔬 Core Algorithms & Implementation Details
-
-| Component | Technique / Algorithm | Purpose |
-| :--- | :--- | :--- |
-| **Object Detection** | YOLOv3 (Darknet) + NMS | Identifies 80 COCO classes, filtered for vehicles (`car`, `bus`, `truck`, `suv`). |
-| **Object Tracking** | Centroid Tracking (Euclidean Distance) | Associates centroids between consecutive frames; assigns persistent IDs. |
-| **Motion Vectoring** | Displacement vector $\Delta = (x_t - x_{t-1}, y_t - y_{t-1})$ | Flags movement vectors opposite to standard lane heading (Wrong-way). |
-| **Spatial Incursion** | Bounding Box in ROI $+ \|\vec{v}\| \approx 0$ | Detects stopped vehicles obstructing intersections during red phase. |
-| **Signal Adaptation** | Sliding Window Trigger | Changes signal phase if violation count exceeds threshold within rolling window. |
+   - Click **Start Analysis**.
+   - Watch the live MJPEG stream and see the traffic density charts update in real time!
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Backend:** Python 3.10+, Flask
-- **Computer Vision:** OpenCV (`cv2.dnn`), YOLOv3 Darknet
-- **Data Science & Visualization:** NumPy, Matplotlib
-- **Frontend:** HTML5, CSS3 (Modern Responsive UI), JavaScript
-- **APIs:** REST API (`wttr.in`)
+- **Computer Vision:** YOLOv8 (`ultralytics`), OpenCV (`cv2`)
+- **Data Visualization:** Chart.js
+- **Frontend:** HTML5, Vanilla CSS3 (Glassmorphism), JavaScript (AJAX)
+- **External APIs:** REST API (`wttr.in` for weather)
 
 ---
 
